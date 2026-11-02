@@ -1,20 +1,20 @@
 """
-Roomba-style autonomous drone for AirSim (Unreal Engine)
+Roomba style autonomous drone for AirSim (Unreal Engine)
 
-The drone NEVER uses its position, a map, GPS or SLAM. It only uses:
-  * distance sensors  (front, front-left, front-right, left, right)  -> "whiskers"
-  * the collision flag                                                -> "bump sensor"
-  * a fixed altitude setpoint                                         -> "keep at floor height"
-  * a timer and a random number generator                             -> "Roomba brain"
+This implemntation does not rely on the drone position, map, GPS or SLAM. It only uses:
+  * distance sensors  (front, front-left, front-right, left, right) and camera -> "whiskers"
+  * the collision flag  -> "bump sensor"
+  * a fixed altitude setpoint  -> "keep at floor height"
+  * a timer and a random number generator -> "Roomba brain"
 
-Behaviours (same idea as a Roomba):
-  SPIRAL       - expanding spiral to cover the area around the start
+Behaviours are all of the drones different modes (like a Roomba):
+  SPIRAL       - expanding spiral to cover the area around the start (does entire 360 to target balloon)
   CRUISE       - go straight until something is ahead
   TURN         - rotate a random angle away from the obstacle
-  WALL_FOLLOW  - hug the wall on the right side for a random time
+  WALL_FOLLOW  - hug the wall on the right side for a random time (for random cone shapes)
   ESCAPE       - after a collision: back up, then turn randomly
 
-Requires:  pip install airsim numpy
+Requires: you're gonna need to pip install airsim numpy
 Put the sensors from the settings.json snippet at the bottom in
 ~/Documents/AirSim/settings.json, then start the Unreal map and run this file.
 """
@@ -26,9 +26,9 @@ from enum import Enum, auto
 
 import airsim
 
-# ----------------------------------------------------------------------------
+
 # Tunables
-# ----------------------------------------------------------------------------
+
 CFG = dict(
     vehicle_name="",
     altitude_m=2.0,          # hover height above takeoff point (barometric hold, not a map position)
@@ -70,9 +70,9 @@ class State(Enum):
     ESCAPE = auto()
 
 
-# ----------------------------------------------------------------------------
-# Sensing
-# ----------------------------------------------------------------------------
+
+# Sense
+
 class Senses:
     def __init__(self, client, vehicle):
         self.c = client
@@ -98,9 +98,8 @@ class Senses:
         return False
 
 
-# ----------------------------------------------------------------------------
 # Actuation (all commands are in the BODY frame - no world coordinates)
-# ----------------------------------------------------------------------------
+
 class Actuator:
     def __init__(self, client, vehicle, z_ned):
         self.c = client
@@ -120,9 +119,8 @@ class Actuator:
         self.move(0, 0, 0)
 
 
-# ----------------------------------------------------------------------------
 # The brain
-# ----------------------------------------------------------------------------
+
 class RoombaBrain:
     def __init__(self, senses, act):
         self.s = senses
@@ -136,7 +134,7 @@ class RoombaBrain:
         self.escape_phase = "back"
         self.enter(State.SPIRAL)
 
-    # ---- state helpers ------------------------------------------------------
+    # finite state helpers
     def elapsed(self):
         return time.time() - self.t_enter
 
@@ -168,7 +166,7 @@ class RoombaBrain:
     def obstacle_ahead(self, d):
         return min(d["DistFront"], d["DistFrontLeft"], d["DistFrontRight"]) < CFG["front_stop_dist"]
 
-    # ---- one control tick ---------------------------------------------------
+    # control tick / loop
     def step(self):
         d = self.s.distances()
 
@@ -185,7 +183,7 @@ class RoombaBrain:
         }[self.state]
         handler(d)
 
-    # ---- behaviours ---------------------------------------------------------
+    #  behaviours 
     def do_spiral(self, d):
         if self.obstacle_ahead(d):
             self.on_obstacle(d)
@@ -270,9 +268,8 @@ class RoombaBrain:
                            then=State.CRUISE)
 
 
-# ----------------------------------------------------------------------------
 # Main
-# ----------------------------------------------------------------------------
+
 def main():
     vehicle = CFG["vehicle_name"]
     client = airsim.MultirotorClient()
@@ -311,7 +308,7 @@ def main():
 if __name__ == "__main__":
     main()
 
-
+    #IMPORT THIS INTO AIRSIM FOR THE CORRECT FUNCTIONALITY 
 """
 ----------------------------------------------------------------------------
 settings.json  (~/Documents/AirSim/settings.json)  - adds the 5 "whisker" sensors
