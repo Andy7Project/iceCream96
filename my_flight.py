@@ -310,10 +310,8 @@ if __name__ == "__main__":
 
     #IMPORT THIS INTO AIRSIM FOR THE CORRECT FUNCTIONALITY 
 """
-----------------------------------------------------------------------------
 settings.json  (~/Documents/AirSim/settings.json)  - adds the 5 "whisker" sensors
 Yaw is relative to the drone's nose. SensorType 5 = Distance.
-----------------------------------------------------------------------------
 {
   "SettingsVersion": 1.2,
   "SimMode": "Multirotor",
